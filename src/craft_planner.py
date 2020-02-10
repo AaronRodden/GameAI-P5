@@ -42,11 +42,19 @@ def make_checker(rule):
 #        print(state[rule])
         # This code is called by graph(state) and runs millions of times.
         # Tip: Do something with rule['Consumes'] and rule['Requires'].
-        if rule['Requires'] not in state:
-            return False
-        for item,amount in rule['Consumes']:
-            if item not in state or state[item] != amount:
-                return False
+#        print(state)
+#        print(rule['Requires'])
+        if 'Requires' in rule:
+            for item in rule['Requires']:
+                if item not in state:
+                    return False
+#        if rule['Requires'] not in state:
+#            return False
+        if 'Consumes' in rule:
+#            print(rule['Consumes'])
+            for item,amount in rule['Consumes'].items():
+                if item not in state or state[item] != amount:
+                    return False
         return True
 
     return check
@@ -60,7 +68,10 @@ def make_effector(rule):
     def effect(state):
         # This code is called by graph(state) and runs millions of times
         # Tip: Do something with rule['Produces'] and rule['Consumes'].
-        next_state = None
+        if 'Consumes' in rule:
+            for item, amount in rule['Consumes']:
+                state[item] = state[item] - amount
+        next_state = state
         return next_state
 
     return effect
@@ -72,15 +83,19 @@ def make_goal_checker(goal):
 
     def is_goal(state):
         # This code is used in the search process and may be called millions of times.
+        if goal in state:
+            return True
         return False
 
     return is_goal
 
 
-def graph(state):
+def graph(state, all_recipes):
     # Iterates through all recipes/rules, checking which are valid in the given state.
     # If a rule is valid, it returns the rule's name, the resulting state after application
     # to the given state, and the cost for the rule.
+#    print(state)
+#    print(all_recipes)
     for r in all_recipes:
         if r.check(state):
             yield (r.name, r.effect(state), r.cost)
@@ -90,7 +105,7 @@ def heuristic(state):
     # Implement your heuristic here!
     return 0
 
-def search(graph, state, is_goal, limit, heuristic):
+def search(graph, state, is_goal, limit, heuristic, all_recipes):
 
     start_time = time()
 #    graph(state)
@@ -98,9 +113,20 @@ def search(graph, state, is_goal, limit, heuristic):
     # When you find a path to the goal return a list of tuples [(state, action)]
     # representing the path. Each element (tuple) of the list represents a state
     # in the path and the action that took you to this state
+#    print(state)
+#    for key,val in state:
+#        print((key,val))
     while time() - start_time < limit:
-        pass
-#        graph(state)
+#        pass
+        yield_out = graph(state,all_recipes)
+        print(yield_out.next())
+#        print(name)
+#        print(new_state)
+#        print(cost)
+#        print(state)
+#        for s in state:
+#            print (s)
+#        test = graph(state, all_recipes)
 
     # Failed to find a path
     print(time() - start_time, 'seconds.')
@@ -144,7 +170,7 @@ if __name__ == '__main__':
 #    print(state)
 
     # Search for a solution
-    resulting_plan = search(graph, state, is_goal, 5, heuristic)
+    resulting_plan = search(graph, state, is_goal, 5, heuristic, all_recipes)
 
     if resulting_plan:
         # Print resulting plan
