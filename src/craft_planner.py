@@ -68,8 +68,12 @@ def make_effector(rule):
     def effect(state):
         # This code is called by graph(state) and runs millions of times
         # Tip: Do something with rule['Produces'] and rule['Consumes'].
+#        print(rule['Produces'])
+#        state[rule['Produces']] = 1
+        for item, amount in rule['Produces'].items():
+            state[item] += amount
         if 'Consumes' in rule:
-            for item, amount in rule['Consumes']:
+            for item, amount in rule['Consumes'].items():
                 state[item] = state[item] - amount
         next_state = state
         return next_state
@@ -118,8 +122,16 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
 #        print((key,val))
     while time() - start_time < limit:
 #        pass
-        yield_out = graph(state,all_recipes)
-        print(yield_out.next())
+        count = 0
+        yield_out = graph(state,all_recipes) #This is our adjacent??
+        for action, new_state, cost in yield_out:
+            print(count)
+#            print(value)
+            print(action)
+#            print(new_state)
+            count+=1
+        state = new_state
+#        print(yield_out.next())
 #        print(name)
 #        print(new_state)
 #        print(cost)
@@ -129,6 +141,7 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
 #        test = graph(state, all_recipes)
 
     # Failed to find a path
+#    print(state)
     print(time() - start_time, 'seconds.')
     print("Failed to find a path from", state, 'within time limit.')
     return None
