@@ -44,16 +44,21 @@ def make_checker(rule):
         # Tip: Do something with rule['Consumes'] and rule['Requires'].
 #        print(state)
 #        print(rule['Requires'])
+#        print("Rule: " + str(rule))
+#        print("State: " + str(state))
         if 'Requires' in rule:
-            for item in rule['Requires']:
+            for item, truth in rule['Requires'].items():
+#                print((item,truth))
+#                for s in state:
+#                    print(s)
                 if item not in state:
+#                    print("Require check not passed")
                     return False
-#        if rule['Requires'] not in state:
-#            return False
         if 'Consumes' in rule:
-#            print(rule['Consumes'])
             for item,amount in rule['Consumes'].items():
-                if item not in state or state[item] != amount:
+                if item not in state or state[item] < amount:
+#                    print("Consumes check not met")
+#                    breakpoint
                     return False
         return True
 
@@ -71,7 +76,12 @@ def make_effector(rule):
 #        print(rule['Produces'])
 #        state[rule['Produces']] = 1
         for item, amount in rule['Produces'].items():
-            state[item] += amount
+#            print((item, amount))
+#            breakpoint #This is my jenky breakpoint, I should figure out how this works in python...
+            if item in state:
+                state[item] += amount
+            else:
+                state[item] = amount
         if 'Consumes' in rule:
             for item, amount in rule['Consumes'].items():
                 state[item] = state[item] - amount
@@ -102,6 +112,7 @@ def graph(state, all_recipes):
 #    print(all_recipes)
     for r in all_recipes:
         if r.check(state):
+#            print("Check passed")
             yield (r.name, r.effect(state), r.cost)
 
 
@@ -120,17 +131,21 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
 #    print(state)
 #    for key,val in state:
 #        print((key,val))
+    
+    queue = []
+    pred = {}
+    
     while time() - start_time < limit:
 #        pass
-        count = 0
+#        count = 0
         yield_out = graph(state,all_recipes) #This is our adjacent??
-        for action, new_state, cost in yield_out:
-            print(count)
+#        for action, new_state, cost in yield_out:
+#            print(count)
 #            print(value)
-            print(action)
+#            print(action)
 #            print(new_state)
-            count+=1
-        state = new_state
+#            count+=1
+#        state = new_state
 #        print(yield_out.next())
 #        print(name)
 #        print(new_state)
@@ -141,7 +156,7 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
 #        test = graph(state, all_recipes)
 
     # Failed to find a path
-#    print(state)
+    print(state)
     print(time() - start_time, 'seconds.')
     print("Failed to find a path from", state, 'within time limit.')
     return None
@@ -177,7 +192,8 @@ if __name__ == '__main__':
     is_goal = make_goal_checker(Crafting['Goal'])
 
     # Initialize first state from initial inventory
-    state = State({key: 0 for key in Crafting['Items']})
+#    state = State({key: 0 for key in Crafting['Items']}) #initing everything to 0 changes how you handle the logic
+    state = State()
 #    print(state)
     state.update(Crafting['Initial'])
 #    print(state)
