@@ -1,6 +1,7 @@
 import json
 from collections import namedtuple, defaultdict, OrderedDict
 from timeit import default_timer as time
+from heapq import heappop, heappush
 
 Recipe = namedtuple('Recipe', ['name', 'check', 'effect', 'cost'])
 
@@ -42,18 +43,16 @@ def make_checker(rule):
 #        print(state[rule])
         # This code is called by graph(state) and runs millions of times.
         # Tip: Do something with rule['Consumes'] and rule['Requires'].
-#        print(state)
-#        print(rule['Requires'])
+
         if 'Requires' in rule:
-            for item in rule['Requires']:
-                if item not in state:
+            for item, truth in rule['Requires'].items():
+                if state[item] < 1:
+#                    print("Require check not passed")
                     return False
-#        if rule['Requires'] not in state:
-#            return False
         if 'Consumes' in rule:
-#            print(rule['Consumes'])
             for item,amount in rule['Consumes'].items():
-                if item not in state or state[item] != amount:
+                if item not in state or state[item] < amount:
+
                     return False
         return True
 
@@ -68,10 +67,19 @@ def make_effector(rule):
     def effect(state):
         # This code is called by graph(state) and runs millions of times
         # Tip: Do something with rule['Produces'] and rule['Consumes'].
+        
+        #I had this at bottom for a while, making it so our next state was just a copy
+        # this resulted in our search going no where
+        next_state = state.copy()
+        
+        for item, amount in rule['Produces'].items():
+            if item in state:
+                next_state[item] += amount
+            else:
+                next_state[item] = amount
         if 'Consumes' in rule:
-            for item, amount in rule['Consumes']:
-                state[item] = state[item] - amount
-        next_state = state
+            for item, amount in rule['Consumes'].items():
+                next_state[item] = next_state[item] - amount
         return next_state
 
     return effect
@@ -83,14 +91,15 @@ def make_goal_checker(goal):
 
     def is_goal(state):
         # This code is used in the search process and may be called millions of times.
-        if goal in state:
-            return True
-        return False
-
+        for item,amount in goal.items():
+            if item not in state or state[item] < amount:
+                return False
+        return True
+    
     return is_goal
 
 
-def graph(state, all_recipes):
+def graph(state):
     # Iterates through all recipes/rules, checking which are valid in the given state.
     # If a rule is valid, it returns the rule's name, the resulting state after application
     # to the given state, and the cost for the rule.
@@ -98,12 +107,22 @@ def graph(state, all_recipes):
 #    print(all_recipes)
     for r in all_recipes:
         if r.check(state):
+#            print("Check passed")
             yield (r.name, r.effect(state), r.cost)
 
 
 def heuristic(state):
     # Implement your heuristic here!
     return 0
+
+
+def create_path(pred_state, pred_action, last_state):
+    path = []
+    while pred_action[last_state] is not None:
+        path.append((last_state,pred_action[last_state]))
+        last_state = pred_state[(last_state)]
+    return list(reversed(path))
+    
 
 def search(graph, state, is_goal, limit, heuristic, all_recipes):
 
@@ -116,19 +135,40 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
 #    print(state)
 #    for key,val in state:
 #        print((key,val))
+    
+    queue = [(0,state)]
+    pred = {state : None}
+    pred_actions = {state : None}
+    path_cost = {state : 0}
+    
     while time() - start_time < limit:
-#        pass
-        yield_out = graph(state,all_recipes)
-        print(yield_out.next())
-#        print(name)
-#        print(new_state)
-#        print(cost)
-#        print(state)
-#        for s in state:
-#            print (s)
-#        test = graph(state, all_recipes)
+    
+        curr_cost, curr_state = heappop(queue)
+#        print(curr_state)
+        if is_goal(curr_state):
+#            print("Reached goal state!")
+#            print(curr_cost)
+#            print(curr_state)
+            return create_path(pred,pred_actions, curr_state)
+
+        for action, new_state, new_cost in graph(curr_state):
+#            print(action)
+#            print(state)
+#            print(curr_state)
+#            print(new_state)
+#            print(path_cost)
+            pathcost =  curr_cost + new_cost
+            estimate = heuristic(new_state)
+            total_est = pathcost + estimate
+            
+            if new_state not in pred.keys() or pathcost < path_cost[new_state]:
+                pred[new_state] = curr_state
+                pred_actions[new_state] = action
+                path_cost[new_state] = pathcost
+                heappush(queue, (total_est, new_state))
 
     # Failed to find a path
+#    print(state)
     print(time() - start_time, 'seconds.')
     print("Failed to find a path from", state, 'within time limit.')
     return None
@@ -163,17 +203,19 @@ if __name__ == '__main__':
     # Create a function which checks for the goal
     is_goal = make_goal_checker(Crafting['Goal'])
 
+    
+
     # Initialize first state from initial inventory
-    state = State({key: 0 for key in Crafting['Items']})
-#    print(state)
+    state = State({key: 0 for key in Crafting['Items']}) #initing everything to 0 changes how you handle the logic
     state.update(Crafting['Initial'])
-#    print(state)
 
     # Search for a solution
-    resulting_plan = search(graph, state, is_goal, 5, heuristic, all_recipes)
+    resulting_plan = search(graph, state, is_goal, 30, heuristic, all_recipes)
 
     if resulting_plan:
         # Print resulting plan
+#        print("Plan: " + str(resulting_plan))
+#        print("Plan length: " + str(len(resulting_plan)))
         for state, action in resulting_plan:
             print('\t',state)
             print(action)
