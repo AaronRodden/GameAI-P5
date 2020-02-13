@@ -103,16 +103,30 @@ def graph(state):
     # Iterates through all recipes/rules, checking which are valid in the given state.
     # If a rule is valid, it returns the rule's name, the resulting state after application
     # to the given state, and the cost for the rule.
-#    print(state)
-#    print(all_recipes)
     for r in all_recipes:
         if r.check(state):
 #            print("Check passed")
             yield (r.name, r.effect(state), r.cost)
 
 
-def heuristic(state):
+def heuristic(action, state):
     # Implement your heuristic here!
+    tools = ['bench', 'furnace', 'iron_axe', 'iron_pickaxe', 'stone_axe', 'stone_pickaxe', 'wooden_axe', 'wooden_pickaxe']
+    
+    #lets do if an item is in the goals requirments then we add to heuristic
+#    print(Crafting['Goal'])
+#    print(all_recipes)
+#    needed_list = {}
+#    for recipe in all_recipes:
+#    for name, rule in Crafting['Recipes'].items():
+#        for item in Crafting['Goal']:
+#            if item in name:
+##                return inf
+##                print(rule['Requires'])
+#                for requirment in rule['Requires']:
+#                    if requirment in action:
+#                        return float('inf')
+    
     return 0
 
 
@@ -132,10 +146,7 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
     # When you find a path to the goal return a list of tuples [(state, action)]
     # representing the path. Each element (tuple) of the list represents a state
     # in the path and the action that took you to this state
-#    print(state)
-#    for key,val in state:
-#        print((key,val))
-    
+
     queue = [(0,state)]
     pred = {state : None}
     pred_actions = {state : None}
@@ -144,21 +155,15 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
     while time() - start_time < limit:
     
         curr_cost, curr_state = heappop(queue)
-#        print(curr_state)
         if is_goal(curr_state):
-#            print("Reached goal state!")
-#            print(curr_cost)
-#            print(curr_state)
+            print("Path found in a time of: " + str(time() - start_time), 'seconds.')
+            print("Path cost: " + str(curr_cost))
+            print("Number of states visited: " + str(len(pred)))
             return create_path(pred,pred_actions, curr_state)
 
         for action, new_state, new_cost in graph(curr_state):
-#            print(action)
-#            print(state)
-#            print(curr_state)
-#            print(new_state)
-#            print(path_cost)
             pathcost =  curr_cost + new_cost
-            estimate = heuristic(new_state)
+            estimate = heuristic(action, new_state)
             total_est = pathcost + estimate
             
             if new_state not in pred.keys() or pathcost < path_cost[new_state]:
@@ -168,7 +173,6 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
                 heappush(queue, (total_est, new_state))
 
     # Failed to find a path
-#    print(state)
     print(time() - start_time, 'seconds.')
     print("Failed to find a path from", state, 'within time limit.')
     return None
@@ -192,30 +196,23 @@ if __name__ == '__main__':
     # Build rules
     all_recipes = []
     for name, rule in Crafting['Recipes'].items():
-#        print (name)
-#        print (rule)
         checker = make_checker(rule)
         effector = make_effector(rule)
         recipe = Recipe(name, checker, effector, rule['Time'])
         all_recipes.append(recipe)
 
-#    print(all_recipes)
     # Create a function which checks for the goal
     is_goal = make_goal_checker(Crafting['Goal'])
 
-    
-
     # Initialize first state from initial inventory
-    state = State({key: 0 for key in Crafting['Items']}) #initing everything to 0 changes how you handle the logic
+    state = State({key: 0 for key in Crafting['Items']}) 
     state.update(Crafting['Initial'])
 
     # Search for a solution
     resulting_plan = search(graph, state, is_goal, 30, heuristic, all_recipes)
 
     if resulting_plan:
-        # Print resulting plan
-#        print("Plan: " + str(resulting_plan))
-#        print("Plan length: " + str(len(resulting_plan)))
+        print("Plan length: " + str(len(resulting_plan)) + "\n")
         for state, action in resulting_plan:
             print('\t',state)
             print(action)
