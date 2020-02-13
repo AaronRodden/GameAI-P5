@@ -111,23 +111,32 @@ def graph(state):
 
 def heuristic(action, state):
     # Implement your heuristic here!
+    
     tools = ['bench', 'furnace', 'iron_axe', 'iron_pickaxe', 'stone_axe', 'stone_pickaxe', 'wooden_axe', 'wooden_pickaxe']
+    #Prioritize making tools
+    for tool in tools:
+        if state[tool] > 1:
+            return float('inf')
+        elif tool in action:
+            return 0
     
-    #lets do if an item is in the goals requirments then we add to heuristic
-#    print(Crafting['Goal'])
-#    print(all_recipes)
-#    needed_list = {}
-#    for recipe in all_recipes:
-#    for name, rule in Crafting['Recipes'].items():
-#        for item in Crafting['Goal']:
-#            if item in name:
-##                return inf
-##                print(rule['Requires'])
-#                for requirment in rule['Requires']:
-#                    if requirment in action:
-#                        return float('inf')
-    
+    #Don't look at making worse tools (I think this doesent actually reduce search...)
+    if state['iron_pickaxe'] > 0:
+        if 'stone_pickaxe' in action or 'wooden_pickaxe' in action:
+            return float('inf')
+    elif state['stone_pickaxe'] > 0:
+        if 'wooden_pickaxe' in action:
+            return float('inf')
+    #Same thing for axes
+    if state['iron_axe'] > 0:
+        if 'stone_axe' in action or 'wooden_axe' in action:
+            return float('inf')
+    elif state['stone_axe'] > 0:
+        if 'wooden_axe' in action:
+            return float('inf')
+        
     return 0
+
 
 
 def create_path(pred_state, pred_action, last_state):
@@ -151,14 +160,17 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
     pred = {state : None}
     pred_actions = {state : None}
     path_cost = {state : 0}
+#    checklist = create_checklist()
+    visited_count = 1
+
     
     while time() - start_time < limit:
-    
+        visited_count += 1
         curr_cost, curr_state = heappop(queue)
         if is_goal(curr_state):
             print("Path found in a time of: " + str(time() - start_time), 'seconds.')
             print("Path cost: " + str(curr_cost))
-            print("Number of states visited: " + str(len(pred)))
+            print("Number of states visited: " + str(visited_count))
             return create_path(pred,pred_actions, curr_state)
 
         for action, new_state, new_cost in graph(curr_state):
