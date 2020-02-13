@@ -160,7 +160,6 @@ def search(graph, state, is_goal, limit, heuristic, all_recipes):
     pred = {state : None}
     pred_actions = {state : None}
     path_cost = {state : 0}
-#    checklist = create_checklist()
     visited_count = 1
 
     
