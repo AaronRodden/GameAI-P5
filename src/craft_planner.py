@@ -112,8 +112,10 @@ def graph(state):
 def heuristic(action, state):
     # Implement your heuristic here!
     
+    #So far all this herustic does is steer us away from redundent states
+    
     tools = ['bench', 'furnace', 'iron_axe', 'iron_pickaxe', 'stone_axe', 'stone_pickaxe', 'wooden_axe', 'wooden_pickaxe']
-    #Prioritize making tools
+    #Don't look at tool states if we already have them
     for tool in tools:
         if state[tool] > 1:
             return float('inf')
