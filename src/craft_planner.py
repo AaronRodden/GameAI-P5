@@ -46,6 +46,7 @@ def make_checker(rule):
 #        print(rule['Requires'])
         if 'Requires' in rule:
             for item in rule['Requires']:
+#                print(item)
                 if item not in state:
                     return False
 #        if rule['Requires'] not in state:
